@@ -22,7 +22,6 @@ if (!$article) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     if (!isset($_SESSION['user_id'])) {
-        // Utilisateur non connecté, redirection vers la page d'inscription
         header('Location: register.php');
         exit;
     }
