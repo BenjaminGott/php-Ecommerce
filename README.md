@@ -1,3 +1,3 @@
 # php-Ecommerce
 
-Benjamin GOTTRANT - 
+Benjamin GOTTRANT - Romeo BERNARD
