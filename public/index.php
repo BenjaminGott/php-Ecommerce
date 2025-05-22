@@ -1,6 +1,7 @@
 <?php
 include_once '../includes/db_connect.php';
 include_once '../includes/header.php';
+
 echo headerComponent();
 
 $allowedSorts = ['categorie', 'price', 'published_at'];
@@ -96,7 +97,7 @@ function sortLink($field, $currentSort, $currentOrder, $category, $search, $labe
                     <img src="<?= htmlspecialchars($article['image_url']) ?>" alt="Image" width="150">
                 <?php endif; ?>
                 <a href="detail.php?id=<?= urlencode($article['id']) ?>">
-    <button type="button">Voir détail</button>
+                 <button type="button">Voir détail</button>
 </a>
 
             </div>
