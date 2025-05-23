@@ -1,148 +1,116 @@
 <?php
-include_once '../includes/header.php';
-include_once '../includes/db_connect.php';
 
+include_once '../includes/db_connect.php';
+include_once '../includes/header.php';
 
 echo headerComponent();
+
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
-$userId = $_SESSION['user_id'];
-$message = "";
 
-// Supprimer un article du panier
-if (isset($_POST['remove'])) {
-    $removeId = (int)$_POST['remove'];
-    $pdo->prepare("DELETE FROM Cart WHERE user_id = :user AND article_id = :article")
-        ->execute(['user' => $userId, 'article' => $removeId]);
-}
 
-// Modifier quantités dans le panier
-if (isset($_POST['update']) && isset($_POST['quantities'])) {
-    foreach ($_POST['quantities'] as $articleId => $qty) {
-        $qty = max(1, (int)$qty);
+$categories = [
+    'Jeux vidéo', 'Vêtements', 'Téléphones / Smartphones', 'Ordinateurs / Tablettes',
+    'Meubles', 'Électroménager', 'Livres', 'Instruments de musique',
+    'Accessoires de mode', 'Voitures', 'Motos / Scooters', 'Articles de sport',
+    'Bijoux', 'Produits de beauté / cosmétiques', 'Jouets pour enfants',
+    'Outils de bricolage', 'Décoration intérieure', 'Appareils photo / caméras',
+    'Articles pour animaux', 'Matériel de jardinage'
+];
 
-        // Vérifie le stock disponible
-        $stockStmt = $pdo->prepare("SELECT quantity FROM Stock WHERE article_id = :article");
-        $stockStmt->execute(['article' => $articleId]);
-        $stockQty = $stockStmt->fetchColumn();
+$message = '';
 
-        if ($qty <= $stockQty) {
-            $pdo->prepare("UPDATE Cart SET quantity = :qty WHERE user_id = :user AND article_id = :article")
-                ->execute(['qty' => $qty, 'user' => $userId, 'article' => $articleId]);
-        } else {
-            $message .= "❌ Quantité demandée pour l'article ID $articleId dépasse le stock disponible ($stockQty).<br>";
-        }
-    }
-}
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'] ?? '';
+    $desc = $_POST['description'] ?? '';
+    $price = $_POST['price'] ?? '';
+    $category = $_POST['categorie'] ?? '';
+    $image = $_POST['image_url'] ?? '';
+    $quantity = $_POST['stock'] ?? '';
 
-// Passer commande
-if (isset($_POST['checkout'])) {
-    // Récupérer panier avec prix et quantité
-    $stmt = $pdo->prepare("
-        SELECT A.id, A.price, A.name, C.quantity, S.quantity AS stock
-        FROM Cart C
-        JOIN Article A ON A.id = C.article_id
-        LEFT JOIN Stock S ON S.article_id = A.id
-        WHERE C.user_id = :user
-    ");
-    $stmt->execute(['user' => $userId]);
-    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($name && $desc && $price !== '' && $category && $quantity !== '') {
+        try {
+            $pdo->beginTransaction();
 
-    $total = 0;
-    $stockOk = true;
-
-    // Vérification stock et total
-    foreach ($items as $item) {
-        if ($item['quantity'] > $item['stock']) {
-            $stockOk = false;
-            $message .= "❌ Stock insuffisant pour l'article " . htmlspecialchars($item['name']) . ". Disponible: {$item['stock']}, demandé: {$item['quantity']}.<br>";
-        }
-        $total += $item['price'] * $item['quantity'];
-    }
-
-    // Vérification solde utilisateur
-    $balanceStmt = $pdo->prepare("SELECT balance FROM User WHERE id = :id");
-    $balanceStmt->execute(['id' => $userId]);
-    $balance = $balanceStmt->fetchColumn();
-
-    if ($stockOk) {
-        if ($balance >= $total) {
-            // Déduire le solde
-            $pdo->prepare("UPDATE User SET balance = balance - :total WHERE id = :id")
-                ->execute(['total' => $total, 'id' => $userId]);
-
-            // Déduire le stock dans la table Stock
-            foreach ($items as $item) {
-                $pdo->prepare("UPDATE Stock SET quantity = quantity - :qty WHERE article_id = :article")
-                    ->execute(['qty' => $item['quantity'], 'article' => $item['id']]);
-            }
-
-            // Créer la facture (adresse facturation statique pour l'exemple)
-            $pdo->prepare("
-                INSERT INTO Invoice (user_id, transaction_date, amount, billing_address, billing_city, billing_postal_code)
-                VALUES (:user, NOW(), :amount, 'Adresse inconnue', 'Ville', '00000')
-            ")->execute([
-                'user' => $userId,
-                'amount' => $total
+            $stmt = $pdo->prepare("INSERT INTO Article (name, description, price, published_at, author_id, image_url, categorie)
+                VALUES (:name, :description, :price, NOW(), :author, :image, :category)");
+            $stmt->execute([
+                'name' => $name,
+                'description' => $desc,
+                'price' => $price,
+                'author' => $_SESSION['user_id'], 
+                'image' => $image,
+                'category' => $category
             ]);
 
-            // Vider le panier
-            $pdo->prepare("DELETE FROM Cart WHERE user_id = :id")->execute(['id' => $userId]);
+            $articleId = $pdo->lastInsertId();
 
-            $message = "✅ Commande effectuée avec succès.";
-        } else {
-            $message .= "❌ Solde insuffisant.";
+            $stockStmt = $pdo->prepare("INSERT INTO Stock (article_id, quantity) VALUES (:id, :qte)");
+            $stockStmt->execute([
+                'id' => $articleId,
+                'qte' => $quantity
+            ]);
+
+            $pdo->commit();
+            $message = "✅ Article ajouté avec succès !";
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $message = "❌ Erreur lors de l’ajout : " . $e->getMessage();
         }
+    } else {
+        $message = "❌ Tous les champs sont requis.";
     }
 }
-
-// Charger le panier
-$stmt = $pdo->prepare("
-    SELECT A.id, A.name, A.price, A.image_url, C.quantity, S.quantity AS stock
-    FROM Cart C
-    JOIN Article A ON A.id = C.article_id
-    LEFT JOIN Stock S ON S.article_id = A.id
-    WHERE C.user_id = :user
-");
-$stmt->execute(['user' => $userId]);
-$cart = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Mon panier</title>
+    <title>Vendre un article</title>
 </head>
 <body>
-    <h1>🛒 Mon panier</h1>
+    <h1>Mettre en vente un article</h1>
 
     <?php if ($message): ?>
-        <p style="color:green;"><?= $message ?></p>
+        <p><?= htmlspecialchars($message) ?></p>
     <?php endif; ?>
 
-    <?php if (empty($cart)): ?>
-        <p>Votre panier est vide.</p>
-    <?php else: ?>
-        <form method="post">
-            <table border="1" cellpadding="10">
-                <tr>
-                    <th>Image</th>
-                    <th>Nom</th>
-                    <th>Prix</th>
-                    <th>Quantité</th>
-                    <th>Stock</th>
-                    <th>Total</th>
-                    <th>Action</th>
-                </tr>
-                <?php $grandTotal = 0; ?>
-                <?php foreach ($cart as $item): 
-                    $total = $item['price'] * $item['quantity'];
-                    $grandTotal += $total;
-                ?>
-                    <tr>
-                        <td><?php if ($item['image_url']):
+    <form method="post">
+        <label>Nom de l’article :<br>
+            <input type="text" name="name" required>
+        </label><br><br>
+
+        <label>Description :<br>
+            <textarea name="description" required></textarea>
+        </label><br><br>
+
+        <label>Prix (€) :<br>
+            <input type="number" step="0.01" name="price" required>
+        </label><br><br>
+
+        <label>Catégorie :<br>
+            <select name="categorie" required>
+                <option value="">-- Choisir une catégorie --</option>
+                <?php foreach ($categories as $cat): ?>
+                    <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label><br><br>
+
+        <label>Quantité en stock :<br>
+            <input type="number" name="stock" required min="0">
+        </label><br><br>
+
+        <label>URL de l’image :<br>
+            <input type="text" name="image_url">
+        </label><br><br>
+
+        <button type="submit">Mettre en vente</button>
+    </form>
+</body>
+</html>

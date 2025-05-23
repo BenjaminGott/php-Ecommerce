@@ -1,7 +1,6 @@
 <?php
 include_once '../includes/header.php';
 include_once '../includes/db_connect.php';
-session_start();
 
 echo headerComponent();
 
@@ -13,20 +12,19 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $message = "";
 
-
+// Gestion mise à jour quantité
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_quantity'], $_POST['cart_id'], $_POST['quantity'])) {
         $cartId = (int)$_POST['cart_id'];
         $quantity = max(1, (int)$_POST['quantity']);
 
-     
         $stmt = $pdo->prepare("UPDATE Cart SET quantity = :qty WHERE id = :id AND user_id = :user");
         $stmt->execute(['qty' => $quantity, 'id' => $cartId, 'user' => $userId]);
 
         $message = "Quantité mise à jour.";
     }
 
-  
+    // Suppression article du panier
     if (isset($_POST['delete_item'], $_POST['cart_id'])) {
         $cartId = (int)$_POST['cart_id'];
 
@@ -37,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-
+// Récupérer les articles dans le panier
 $stmt = $pdo->prepare("
     SELECT C.id AS cart_id, A.id AS article_id, A.name, A.price, C.quantity
     FROM Cart C
@@ -47,6 +45,16 @@ $stmt = $pdo->prepare("
 $stmt->execute(['user' => $userId]);
 $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Calcul du total panier
+$grandTotal = 0;
+foreach ($cartItems as $item) {
+    $grandTotal += $item['price'] * $item['quantity'];
+}
+
+// Récupérer solde utilisateur
+$balanceStmt = $pdo->prepare("SELECT balance FROM User WHERE id = :id");
+$balanceStmt->execute(['id' => $userId]);
+$userBalance = $balanceStmt->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -76,11 +84,8 @@ $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </tr>
             </thead>
             <tbody>
-                <?php
-                $grandTotal = 0;
-                foreach ($cartItems as $item):
+                <?php foreach ($cartItems as $item): 
                     $totalPrice = $item['price'] * $item['quantity'];
-                    $grandTotal += $totalPrice;
                 ?>
                 <tr>
                     <td><?= htmlspecialchars($item['name']) ?></td>
@@ -110,11 +115,14 @@ $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <br>
 
-        <form method="post" action="validate.php">
-            <button type="submit">Valider la commande</button>
-        </form>
+        <?php if ($userBalance < $grandTotal): ?>
+            <p style="color:red;">Solde insuffisant pour passer la commande. Votre solde est de <?= number_format($userBalance, 2) ?> €, total panier <?= number_format($grandTotal, 2) ?> €.</p>
+        <?php else: ?>
+            <form method="post" action="cart/validate.php">
+                <button type="submit">Valider la commande</button>
+            </form>
+        <?php endif; ?>
     <?php endif; ?>
 
-    <p><a href="../index.php">Retour à l'accueil</a></p>
 </body>
 </html>

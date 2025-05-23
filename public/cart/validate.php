@@ -1,7 +1,6 @@
 <?php
-include_once '../includes/header.php';
-include_once '../includes/db_connect.php';
-session_start();
+include_once '../../includes/header.php';
+include_once '../../includes/db_connect.php';
 
 echo headerComponent();
 
@@ -13,9 +12,9 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $message = "";
 
-// Récupérer panier
+
 $stmt = $pdo->prepare("
-    SELECT A.id, A.name, A.price, C.quantity, S.quantity AS stock
+    SELECT A.id, A.name, A.price, C.quantity, S.quantity AS stock, A.author_id
     FROM Cart C
     JOIN Article A ON A.id = C.article_id
     LEFT JOIN Stock S ON S.article_id = A.id
@@ -30,7 +29,6 @@ if (empty($cart)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
-    // Récupérer infos facturation
     $billing_address = trim($_POST['billing_address'] ?? '');
     $billing_city = trim($_POST['billing_city'] ?? '');
     $billing_postal_code = trim($_POST['billing_postal_code'] ?? '');
@@ -39,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
     if (empty($billing_address) || empty($billing_city) || empty($billing_postal_code)) {
         $message = "Veuillez remplir toutes les informations de facturation.";
     } else {
-        // Calcul total & vérification stock
         $total = 0;
         $stockOk = true;
 
@@ -51,42 +48,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
             $total += $item['price'] * $item['quantity'];
         }
 
-        // Vérifier solde
         $balanceStmt = $pdo->prepare("SELECT balance FROM User WHERE id = :id");
         $balanceStmt->execute(['id' => $userId]);
         $balance = $balanceStmt->fetchColumn();
 
         if (!$stockOk) {
-            $message .= "Veuillez réduire les quantités dans votre panier.<br>";
+            $message .= "Veuillez réduire les quantités.<br>";
         } elseif ($balance < $total) {
             $message .= "Solde insuffisant.<br>";
         } else {
-            // Début transaction
             $pdo->beginTransaction();
             try {
-                // Déduire solde utilisateur
+           
                 $pdo->prepare("UPDATE User SET balance = balance - :total WHERE id = :id")
                     ->execute(['total' => $total, 'id' => $userId]);
 
-                // Mettre à jour stock et insérer historique
                 $historyStmt = $pdo->prepare("INSERT INTO History (user_id, article_id, quantity, order_date) VALUES (:user, :article, :qty, NOW())");
                 $stockUpdateStmt = $pdo->prepare("UPDATE Stock SET quantity = quantity - :qty WHERE article_id = :article");
+                $sellerUpdateStmt = $pdo->prepare("UPDATE User SET balance = balance + :gain WHERE id = :seller");
 
                 foreach ($cart as $item) {
+                    $gain = $item['price'] * $item['quantity'];
+
                     $stockUpdateStmt->execute(['qty' => $item['quantity'], 'article' => $item['id']]);
                     $historyStmt->execute([
                         'user' => $userId,
                         'article' => $item['id'],
                         'qty' => $item['quantity']
                     ]);
+                   
+                    $sellerUpdateStmt->execute([
+                        'gain' => $gain,
+                        'seller' => $item['author_id']
+                    ]);
                 }
 
-                // Créer facture
-                $invoiceStmt = $pdo->prepare("
+                $pdo->prepare("
                     INSERT INTO Invoice (user_id, transaction_date, amount, billing_address, billing_city, billing_postal_code)
                     VALUES (:user, NOW(), :amount, :address, :city, :postal)
-                ");
-                $invoiceStmt->execute([
+                ")->execute([
                     'user' => $userId,
                     'amount' => $total,
                     'address' => $billing_address,
@@ -94,19 +94,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                     'postal' => $billing_postal_code
                 ]);
 
-                // Vider panier
                 $pdo->prepare("DELETE FROM Cart WHERE user_id = :id")->execute(['id' => $userId]);
 
                 $pdo->commit();
                 $message = "✅ Commande validée avec succès.";
             } catch (Exception $e) {
                 $pdo->rollBack();
-                $message = "Erreur lors de la validation : " . $e->getMessage();
+                $message = "Erreur : " . $e->getMessage();
             }
         }
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
