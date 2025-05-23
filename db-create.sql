@@ -58,6 +58,14 @@ CREATE TABLE `Review` (
   `created_at` datetime
 );
 
+CREATE TABLE `History` (
+  `id` int PRIMARY KEY AUTO_INCREMENT,
+  `user_id` int,
+  `article_id` int,
+  `quantity` int,
+  `order_date` datetime
+);
+
 ALTER TABLE `Article` ADD FOREIGN KEY (`author_id`) REFERENCES `User` (`id`);
 
 ALTER TABLE `Cart` ADD FOREIGN KEY (`user_id`) REFERENCES `User` (`id`);
@@ -75,3 +83,7 @@ ALTER TABLE `Favorite` ADD FOREIGN KEY (`article_id`) REFERENCES `Article` (`id`
 ALTER TABLE `Review` ADD FOREIGN KEY (`user_id`) REFERENCES `User` (`id`);
 
 ALTER TABLE `Review` ADD FOREIGN KEY (`article_id`) REFERENCES `Article` (`id`);
+
+ALTER TABLE `History` ADD FOREIGN KEY (`user_id`) REFERENCES `User` (`id`);
+
+ALTER TABLE `History` ADD FOREIGN KEY (`article_id`) REFERENCES `Article` (`id`);
