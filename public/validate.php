@@ -5,7 +5,7 @@ include_once '../../includes/db_connect.php';
 echo headerComponent();
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         } else {
             $pdo->beginTransaction();
             try {
-           
+
                 $pdo->prepare("UPDATE User SET balance = balance - :total WHERE id = :id")
                     ->execute(['total' => $total, 'id' => $userId]);
 
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                         'article' => $item['id'],
                         'qty' => $item['quantity']
                     ]);
-                   
+
                     $sellerUpdateStmt->execute([
                         'gain' => $gain,
                         'seller' => $item['author_id']
@@ -87,12 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                     INSERT INTO Invoice (user_id, transaction_date, amount, billing_address, billing_city, billing_postal_code)
                     VALUES (:user, NOW(), :amount, :address, :city, :postal)
                 ")->execute([
-                    'user' => $userId,
-                    'amount' => $total,
-                    'address' => $billing_address,
-                    'city' => $billing_city,
-                    'postal' => $billing_postal_code
-                ]);
+                            'user' => $userId,
+                            'amount' => $total,
+                            'address' => $billing_address,
+                            'city' => $billing_city,
+                            'postal' => $billing_postal_code
+                        ]);
 
                 $pdo->prepare("DELETE FROM Cart WHERE user_id = :id")->execute(['id' => $userId]);
 
@@ -110,10 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
 
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Confirmation de commande</title>
 </head>
+
 <body>
     <h1>Confirmation de commande</h1>
 
@@ -126,7 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         <ul>
             <?php foreach ($cart as $item): ?>
                 <li>
-                    <?= htmlspecialchars($item['name']) ?> — Quantité : <?= $item['quantity'] ?> — Prix unitaire : <?= number_format($item['price'], 2) ?> €
+                    <?= htmlspecialchars($item['name']) ?> — Quantité : <?= $item['quantity'] ?> — Prix unitaire :
+                    <?= number_format($item['price'], 2) ?> €
                 </li>
             <?php endforeach; ?>
         </ul>
@@ -151,4 +154,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         <p><a href="../index.php">Retour à l'accueil</a></p>
     <?php endif; ?>
 </body>
+
 </html>

@@ -14,12 +14,26 @@ if (!isset($_SESSION['user_id'])) {
 
 
 $categories = [
-    'Jeux vidéo', 'Vêtements', 'Téléphones / Smartphones', 'Ordinateurs / Tablettes',
-    'Meubles', 'Électroménager', 'Livres', 'Instruments de musique',
-    'Accessoires de mode', 'Voitures', 'Motos / Scooters', 'Articles de sport',
-    'Bijoux', 'Produits de beauté / cosmétiques', 'Jouets pour enfants',
-    'Outils de bricolage', 'Décoration intérieure', 'Appareils photo / caméras',
-    'Articles pour animaux', 'Matériel de jardinage'
+    'Jeux vidéo',
+    'Vêtements',
+    'Téléphones / Smartphones',
+    'Ordinateurs / Tablettes',
+    'Meubles',
+    'Électroménager',
+    'Livres',
+    'Instruments de musique',
+    'Accessoires de mode',
+    'Voitures',
+    'Motos / Scooters',
+    'Articles de sport',
+    'Bijoux',
+    'Produits de beauté / cosmétiques',
+    'Jouets pour enfants',
+    'Outils de bricolage',
+    'Décoration intérieure',
+    'Appareils photo / caméras',
+    'Articles pour animaux',
+    'Matériel de jardinage'
 ];
 
 $message = '';
@@ -42,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => $name,
                 'description' => $desc,
                 'price' => $price,
-                'author' => $_SESSION['user_id'], 
+                'author' => $_SESSION['user_id'],
                 'image' => $image,
                 'category' => $category
             ]);
@@ -69,10 +83,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Vendre un article</title>
 </head>
+
 <body>
     <h1>Mettre en vente un article</h1>
 
@@ -113,4 +129,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">Mettre en vente</button>
     </form>
 </body>
+
 </html>

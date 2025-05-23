@@ -32,7 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><title>Connexion</title></head>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion</title>
+</head>
+
 <body>
     <h1>Connexion</h1>
 
@@ -52,4 +57,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <p>Pas encore inscrit ? <a href="register.php">S'inscrire</a></p>
 </body>
+
 </html>

@@ -63,7 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><title>Inscription</title></head>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription</title>
+</head>
+
 <body>
     <h1>Inscription</h1>
 
@@ -73,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="post">
         <label for="username">Nom d'utilisateur :</label><br>
-        <input type="text" id="username" name="username" required value="<?= htmlspecialchars($username ?? '') ?>"><br><br>
+        <input type="text" id="username" name="username" required
+            value="<?= htmlspecialchars($username ?? '') ?>"><br><br>
 
         <label for="email">Email :</label><br>
         <input type="email" id="email" name="email" required value="<?= htmlspecialchars($email ?? '') ?>"><br><br>
@@ -85,11 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="password" id="password_confirm" name="password_confirm" required><br><br>
 
         <label for="profile_picture">Lien de la photo de profil :</label><br>
-        <input type="url" id="profile_picture" name="profile_picture" placeholder="https://example.com/photo.jpg" value="<?= htmlspecialchars($profilePicturePath ?? '') ?>"><br><br>
+        <input type="url" id="profile_picture" name="profile_picture" placeholder="https://example.com/photo.jpg"
+            value="<?= htmlspecialchars($profilePicturePath ?? '') ?>"><br><br>
 
         <button type="submit">S'inscrire</button>
     </form>
 
     <p>Déjà inscrit ? <a href="login.php">Se connecter</a></p>
 </body>
+
 </html>

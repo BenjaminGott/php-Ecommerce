@@ -1,13 +1,19 @@
 <?php
 session_start();
 
-function logout() {
+function logout()
+{
     $_SESSION = [];
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
+        setcookie(
+            session_name(),
+            '',
+            time() - 42000,
+            $params["path"],
+            $params["domain"],
+            $params["secure"],
+            $params["httponly"]
         );
     }
     session_destroy();
@@ -19,7 +25,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     logout();
 }
 
-function headerComponent() {
+function headerComponent()
+{
     $isLoggedIn = isset($_SESSION['user_id']);
     $username = $_SESSION['username'] ?? '';
 
@@ -31,7 +38,6 @@ function headerComponent() {
         $header .= '<button onclick="location.href=\'cart.php\'">Voir mon panier</button> ';
         $header .= '<button onclick="location.href=\'profile.php\'">Voir mon Profile</button> ';
         $header .= '<span>Bienvenue, ' . htmlspecialchars($username) . '</span> ';
-        // Le bouton logout redirige vers la même page avec ?action=logout
         $header .= '<button onclick="location.href=\'?action=logout\'">Ce déconecter</button>';
     } else {
         $header .= '<button onclick="location.href=\'login.php\'">Ce conecter</button> ';

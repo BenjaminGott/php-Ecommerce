@@ -5,7 +5,7 @@ include_once '../includes/db_connect.php';
 echo headerComponent();
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -15,8 +15,8 @@ $message = "";
 // Gestion mise à jour quantité
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_quantity'], $_POST['cart_id'], $_POST['quantity'])) {
-        $cartId = (int)$_POST['cart_id'];
-        $quantity = max(1, (int)$_POST['quantity']);
+        $cartId = (int) $_POST['cart_id'];
+        $quantity = max(1, (int) $_POST['quantity']);
 
         $stmt = $pdo->prepare("UPDATE Cart SET quantity = :qty WHERE id = :id AND user_id = :user");
         $stmt->execute(['qty' => $quantity, 'id' => $cartId, 'user' => $userId]);
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Suppression article du panier
     if (isset($_POST['delete_item'], $_POST['cart_id'])) {
-        $cartId = (int)$_POST['cart_id'];
+        $cartId = (int) $_POST['cart_id'];
 
         $stmt = $pdo->prepare("DELETE FROM Cart WHERE id = :id AND user_id = :user");
         $stmt->execute(['id' => $cartId, 'user' => $userId]);
@@ -59,10 +59,12 @@ $userBalance = $balanceStmt->fetchColumn();
 
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Mon panier</title>
 </head>
+
 <body>
     <h1>Mon panier</h1>
 
@@ -84,27 +86,29 @@ $userBalance = $balanceStmt->fetchColumn();
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($cartItems as $item): 
+                <?php foreach ($cartItems as $item):
                     $totalPrice = $item['price'] * $item['quantity'];
-                ?>
-                <tr>
-                    <td><?= htmlspecialchars($item['name']) ?></td>
-                    <td><?= number_format($item['price'], 2) ?></td>
-                    <td>
-                        <form method="post" style="display:inline;">
-                            <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
-                            <input type="number" name="quantity" value="<?= $item['quantity'] ?>" min="1" required style="width:60px;">
-                            <button type="submit" name="update_quantity">Modifier</button>
-                        </form>
-                    </td>
-                    <td><?= number_format($totalPrice, 2) ?></td>
-                    <td>
-                        <form method="post" style="display:inline;">
-                            <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
-                            <button type="submit" name="delete_item" onclick="return confirm('Supprimer cet article du panier ?')">Supprimer</button>
-                        </form>
-                    </td>
-                </tr>
+                    ?>
+                    <tr>
+                        <td><?= htmlspecialchars($item['name']) ?></td>
+                        <td><?= number_format($item['price'], 2) ?></td>
+                        <td>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
+                                <input type="number" name="quantity" value="<?= $item['quantity'] ?>" min="1" required
+                                    style="width:60px;">
+                                <button type="submit" name="update_quantity">Modifier</button>
+                            </form>
+                        </td>
+                        <td><?= number_format($totalPrice, 2) ?></td>
+                        <td>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
+                                <button type="submit" name="delete_item"
+                                    onclick="return confirm('Supprimer cet article du panier ?')">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
                 <?php endforeach; ?>
                 <tr>
                     <td colspan="3" style="text-align:right;"><strong>Total général :</strong></td>
@@ -116,13 +120,16 @@ $userBalance = $balanceStmt->fetchColumn();
         <br>
 
         <?php if ($userBalance < $grandTotal): ?>
-            <p style="color:red;">Solde insuffisant pour passer la commande. Votre solde est de <?= number_format($userBalance, 2) ?> €, total panier <?= number_format($grandTotal, 2) ?> €.</p>
+            <p style="color:red;">Solde insuffisant pour passer la commande. Votre solde est de
+                <?= number_format($userBalance, 2) ?> €, total panier <?= number_format($grandTotal, 2) ?> €.
+            </p>
         <?php else: ?>
-            <form method="post" action="cart/validate.php">
+            <form method="post" action="validate.php">
                 <button type="submit">Valider la commande</button>
             </form>
         <?php endif; ?>
     <?php endif; ?>
 
 </body>
+
 </html>

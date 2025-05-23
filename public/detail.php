@@ -34,8 +34,8 @@ $isOwner = ($userId && $article['author_id'] == $userId);
 $isAdmin = false;
 if ($userId) {
     $adminCheck = $pdo->prepare("SELECT role FROM User WHERE id = :id");
-$adminCheck->execute(['id' => $userId]);
-$isAdmin = $adminCheck->fetchColumn() === 'admin';
+    $adminCheck->execute(['id' => $userId]);
+    $isAdmin = $adminCheck->fetchColumn() === 'admin';
 
 }
 
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isOwner || $isAdmin)) {
     $desc = trim($_POST['description']);
     $price = floatval($_POST['price']);
     $categorie = trim($_POST['categorie']);
-    $stock = (int)$_POST['stock'];
+    $stock = (int) $_POST['stock'];
     $image = trim($_POST['image_url']);
 
     if ($name && $price >= 0 && $categorie) {
@@ -56,13 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isOwner || $isAdmin)) {
             SET name = :n, description = :d, price = :p, categorie = :c, image_url = :img
             WHERE id = :id
         ")->execute([
-            'n' => $name,
-            'd' => $desc,
-            'p' => $price,
-            'c' => $categorie,
-            'img' => $image,
-            'id' => $articleId
-        ]);
+                    'n' => $name,
+                    'd' => $desc,
+                    'p' => $price,
+                    'c' => $categorie,
+                    'img' => $image,
+                    'id' => $articleId
+                ]);
 
         $pdo->prepare("UPDATE Stock SET quantity = :q WHERE article_id = :id")
             ->execute(['q' => $stock, 'id' => $articleId]);
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         exit;
     }
 
-    $quantity = max(1, (int)($_POST['quantity'] ?? 1));
+    $quantity = max(1, (int) ($_POST['quantity'] ?? 1));
 
     if ($quantity > $article['stock']) {
         $message = "❌ Stock insuffisant.";
@@ -105,78 +105,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Détails de l'article</title>
     <style>
-        body { max-width: 800px; margin: auto; font-family: sans-serif; }
-        form { margin-top: 20px; }
-        input, textarea { width: 100%; margin: 5px 0; padding: 8px; }
-        label { font-weight: bold; }
-        button { padding: 10px 20px; margin-top: 10px; }
-        .message { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .message.success { background: #d4edda; color: #155724; }
-        .message.error { background: #f8d7da; color: #721c24; }
-        img { max-width: 300px; margin: 10px 0; }
+        body {
+            max-width: 800px;
+            margin: auto;
+            font-family: sans-serif;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        img {
+            max-width: 300px;
+            margin: 10px 0;
+        }
     </style>
 </head>
+
 <body>
 
-<h1><?= htmlspecialchars($article['name']) ?></h1>
+    <h1><?= htmlspecialchars($article['name']) ?></h1>
 
-<?php if (!empty($article['image_url'])): ?>
-    <img src="<?= htmlspecialchars($article['image_url']) ?>" alt="Image produit">
-<?php endif; ?>
+    <?php if (!empty($article['image_url'])): ?>
+        <img src="<?= htmlspecialchars($article['image_url']) ?>" alt="Image produit">
+    <?php endif; ?>
 
-<p>Vendu par : <a href="profile.php?id=<?= $article['seller_id'] ?>"><?= htmlspecialchars($article['seller_name']) ?></a></p>
+    <p>Vendu par : <a
+            href="profile.php?id=<?= $article['seller_id'] ?>"><?= htmlspecialchars($article['seller_name']) ?></a></p>
 
-<?php if ($message): ?>
-    <div class="message <?= str_starts_with($message, '✅') ? 'success' : 'error' ?>">
-        <?= htmlspecialchars($message) ?>
-    </div>
-<?php endif; ?>
+    <?php if ($message): ?>
+        <div class="message <?= str_starts_with($message, '✅') ? 'success' : 'error' ?>">
+            <?= htmlspecialchars($message) ?>
+        </div>
+    <?php endif; ?>
 
-<?php if ($isOwner || $isAdmin): ?>
-    <form method="post">
-        <label>Nom</label>
-        <input type="text" name="name" value="<?= htmlspecialchars($article['name']) ?>" required>
-
-        <label>Description</label>
-        <textarea name="description" rows="4"><?= htmlspecialchars($article['description']) ?></textarea>
-
-        <label>Prix (€)</label>
-        <input type="number" name="price" step="0.01" min="0" value="<?= $article['price'] ?>" required>
-
-        <label>Catégorie</label>
-        <input type="text" name="categorie" value="<?= htmlspecialchars($article['categorie']) ?>" required>
-
-        <label>Stock</label>
-        <input type="number" name="stock" min="0" value="<?= $article['stock'] ?>" required>
-
-        <label>Image URL</label>
-        <input type="text" name="image_url" value="<?= htmlspecialchars($article['image_url']) ?>">
-
-        <button type="submit">Enregistrer</button>
-    </form>
-<?php else: ?>
-    <p><?= nl2br(htmlspecialchars($article['description'])) ?></p>
-    <p>Prix : <?= number_format($article['price'], 2) ?> €</p>
-    <p>Catégorie : <?= htmlspecialchars($article['categorie']) ?></p>
-    <p>Publié le : <?= $article['published_at'] ?></p>
-    <p>Stock disponible : <?= $article['stock'] ?? '0' ?></p>
-
-    <?php if ($article['stock'] > 0): ?>
+    <?php if ($isOwner || $isAdmin): ?>
         <form method="post">
-            <label for="quantity">Quantité :</label>
-            <input type="number" id="quantity" name="quantity" value="1" min="1" max="<?= $article['stock'] ?>" required>
-            <button type="submit" name="add_to_cart">Ajouter au panier</button>
+            <label>Nom</label>
+            <input type="text" name="name" value="<?= htmlspecialchars($article['name']) ?>" required>
+
+            <label>Description</label>
+            <textarea name="description" rows="4"><?= htmlspecialchars($article['description']) ?></textarea>
+
+            <label>Prix (€)</label>
+            <input type="number" name="price" step="0.01" min="0" value="<?= $article['price'] ?>" required>
+
+            <label>Catégorie</label>
+            <input type="text" name="categorie" value="<?= htmlspecialchars($article['categorie']) ?>" required>
+
+            <label>Stock</label>
+            <input type="number" name="stock" min="0" value="<?= $article['stock'] ?>" required>
+
+            <label>Image URL</label>
+            <input type="text" name="image_url" value="<?= htmlspecialchars($article['image_url']) ?>">
+
+            <button type="submit">Enregistrer</button>
         </form>
     <?php else: ?>
-        <p><strong>Article en rupture de stock.</strong></p>
-    <?php endif; ?>
-<?php endif; ?>
+        <p><?= nl2br(htmlspecialchars($article['description'])) ?></p>
+        <p>Prix : <?= number_format($article['price'], 2) ?> €</p>
+        <p>Catégorie : <?= htmlspecialchars($article['categorie']) ?></p>
+        <p>Publié le : <?= $article['published_at'] ?></p>
+        <p>Stock disponible : <?= $article['stock'] ?? '0' ?></p>
 
-<p><a href="index.php">⬅ Retour</a></p>
+        <?php if ($article['stock'] > 0): ?>
+            <form method="post">
+                <label for="quantity">Quantité :</label>
+                <input type="number" id="quantity" name="quantity" value="1" min="1" max="<?= $article['stock'] ?>" required>
+                <button type="submit" name="add_to_cart">Ajouter au panier</button>
+            </form>
+        <?php else: ?>
+            <p><strong>Article en rupture de stock.</strong></p>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <p><a href="index.php">⬅ Retour</a></p>
 
 </body>
+
 </html>
