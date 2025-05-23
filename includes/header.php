@@ -27,15 +27,15 @@ function headerComponent() {
     $header .= '<button onclick="location.href=\'index.php\'">Go Home</button> ';
 
     if ($isLoggedIn) {
-        $header .= '<button onclick="location.href=\'add.php\'">Go Add</button> ';
-        $header .= '<button onclick="location.href=\'pagnier.php\'">Go Pagnier</button> ';
-        $header .= '<button onclick="location.href=\'profile.php\'">Go Profile</button> ';
+        $header .= '<button onclick="location.href=\'sell.php\'">Vendre un objet</button> ';
+        $header .= '<button onclick="location.href=\'cart.php\'">Voir mon panier</button> ';
+        $header .= '<button onclick="location.href=\'profile.php\'">Voir mon Profile</button> ';
         $header .= '<span>Bienvenue, ' . htmlspecialchars($username) . '</span> ';
         // Le bouton logout redirige vers la même page avec ?action=logout
-        $header .= '<button onclick="location.href=\'?action=logout\'">Logout</button>';
+        $header .= '<button onclick="location.href=\'?action=logout\'">Ce déconecter</button>';
     } else {
-        $header .= '<button onclick="location.href=\'login.php\'">Go Login</button> ';
-        $header .= '<button onclick="location.href=\'register.php\'">Go Register</button>';
+        $header .= '<button onclick="location.href=\'login.php\'">Ce conecter</button> ';
+        $header .= '<button onclick="location.href=\'register.php\'">S"inscrire</button>';
     }
 
     $header .= '</header>';
