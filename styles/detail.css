@@ -1,0 +1,104 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 30px;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+h1,
+h2 {
+  color: #222;
+}
+
+img {
+  max-width: 300px;
+  display: block;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+a {
+  color: #0066cc;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.avg-rating {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+.message.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+form {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+form label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+form input[type="text"],
+form input[type="number"],
+form textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+form button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+form button:hover {
+  background-color: #218838;
+}
+
+.favorite-btn {
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: gold;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+}
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.review {
+  background: #fff;
+  padding: 10px 15px;
+  border-left: 4px solid #007bff;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+small {
+  color: #888;
+}
