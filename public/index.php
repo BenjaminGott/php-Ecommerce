@@ -4,12 +4,14 @@ include_once '../includes/header.php';
 
 echo headerComponent();
 
+$userId = $_SESSION['user_id'] ?? null;
 $allowedSorts = ['categorie', 'price', 'published_at'];
 $allowedOrders = ['ASC', 'DESC'];
 $sort = in_array($_GET['sort'] ?? '', $allowedSorts) ? $_GET['sort'] : 'published_at';
 $order = in_array($_GET['order'] ?? '', $allowedOrders) ? $_GET['order'] : 'DESC';
 $selectedCategory = $_GET['category'] ?? '';
 $search = $_GET['search'] ?? '';
+$filterFavorites = isset($_GET['favorites']) && $userId !== null;
 
 $categories = [
     'Jeux vidéo',
@@ -35,34 +37,47 @@ $categories = [
 ];
 
 // Construction de la requête avec filtres
-$sql = "SELECT * FROM Article WHERE 1";
+$sql = "SELECT A.* FROM Article A ";
 $params = [];
 
+if ($filterFavorites) {
+    // Joindre la table Favorite pour filtrer par favoris utilisateur
+    $sql .= "JOIN Favorite F ON A.id = F.article_id AND F.user_id = :userid ";
+    $params['userid'] = $userId;
+}
+
+$sql .= "WHERE 1=1 ";
+
 if ($selectedCategory !== '') {
-    $sql .= " AND categorie = :cat";
+    $sql .= " AND A.categorie = :cat";
     $params['cat'] = $selectedCategory;
 }
 if ($search !== '') {
-    $sql .= " AND name LIKE :search";
+    $sql .= " AND A.name LIKE :search";
     $params['search'] = '%' . $search . '%';
 }
 
 $sql .= " ORDER BY $sort $order";
+
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-function sortLink($field, $currentSort, $currentOrder, $category, $search, $label)
+function sortLink($field, $currentSort, $currentOrder, $category, $search, $favorites, $label)
 {
     $newOrder = ($currentSort === $field && $currentOrder === 'ASC') ? 'DESC' : 'ASC';
     $arrow = $currentSort === $field ? ($currentOrder === 'ASC' ? '↑' : '↓') : '';
-    $params = http_build_query([
+    $params = [
         'sort' => $field,
         'order' => $newOrder,
         'category' => $category,
-        'search' => $search
-    ]);
-    return "<a href=\"?$params\">$label $arrow</a>";
+        'search' => $search,
+    ];
+    if ($favorites) {
+        $params['favorites'] = 'on';
+    }
+    $query = http_build_query($params);
+    return "<a href=\"?$query\">$label $arrow</a>";
 }
 ?>
 
@@ -91,13 +106,22 @@ function sortLink($field, $currentSort, $currentOrder, $category, $search, $labe
             <?php endforeach; ?>
         </select>
 
+        <?php if ($userId): ?>
+            <label for="favorites" style="margin-left:15px;">
+                <input type="checkbox" name="favorites" id="favorites" <?= $filterFavorites ? 'checked' : '' ?>>
+                Afficher uniquement mes favoris
+            </label>
+        <?php else: ?>
+            <p style="font-style: italic; color: gray;">Connectez-vous pour filtrer par favoris.</p>
+        <?php endif; ?>
+
         <button type="submit">Filtrer</button>
     </form>
 
     <div>
         <strong>Trier par :</strong>
-        <?= sortLink('published_at', $sort, $order, $selectedCategory, $search, 'Date') ?> |
-        <?= sortLink('price', $sort, $order, $selectedCategory, $search, 'Prix') ?>
+        <?= sortLink('published_at', $sort, $order, $selectedCategory, $search, $filterFavorites, 'Date') ?> |
+        <?= sortLink('price', $sort, $order, $selectedCategory, $search, $filterFavorites, 'Prix') ?>
     </div>
 
     <?php if (empty($articles)): ?>
@@ -116,7 +140,6 @@ function sortLink($field, $currentSort, $currentOrder, $category, $search, $labe
                 <a href="detail.php?id=<?= urlencode($article['id']) ?>">
                     <button type="button">Voir détail</button>
                 </a>
-
             </div>
         <?php endforeach; ?>
     <?php endif; ?>

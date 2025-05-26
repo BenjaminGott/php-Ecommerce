@@ -2,8 +2,9 @@
 include_once '../includes/header.php';
 include_once '../includes/db_connect.php';
 
-echo headerComponent();
+session_start();
 
+echo headerComponent();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     echo "Article invalide.";
@@ -11,6 +12,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 }
 
 $articleId = (int) $_GET['id'];
+$userId = $_SESSION['user_id'] ?? null;
 
 $stmt = $pdo->prepare("
     SELECT A.*, S.quantity AS stock, U.username AS seller_name, U.id AS seller_id 
@@ -27,22 +29,66 @@ if (!$article) {
     exit;
 }
 
-$userId = $_SESSION['user_id'] ?? null;
 $isOwner = ($userId && $article['author_id'] == $userId);
-
 
 $isAdmin = false;
 if ($userId) {
     $adminCheck = $pdo->prepare("SELECT role FROM User WHERE id = :id");
     $adminCheck->execute(['id' => $userId]);
     $isAdmin = $adminCheck->fetchColumn() === 'admin';
+}
 
+
+$hasBought = false;
+if ($userId) {
+    $checkPurchase = $pdo->prepare("SELECT COUNT(*) FROM History WHERE user_id = :uid AND article_id = :aid");
+    $checkPurchase->execute(['uid' => $userId, 'aid' => $articleId]);
+    $hasBought = $checkPurchase->fetchColumn() > 0;
+}
+
+$isFavorite = false;
+if ($userId) {
+    $favCheck = $pdo->prepare("SELECT COUNT(*) FROM Favorite WHERE user_id = :uid AND article_id = :aid");
+    $favCheck->execute(['uid' => $userId, 'aid' => $articleId]);
+    $isFavorite = $favCheck->fetchColumn() > 0;
 }
 
 $message = "";
 
-// MODIFICATION PAR PROPRIÉTAIRE OU ADMIN
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isOwner || $isAdmin)) {
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_article']) && ($isOwner || $isAdmin)) {
+    $pdo->prepare("DELETE FROM History WHERE article_id = :id")->execute(['id' => $articleId]);
+    $pdo->prepare("DELETE FROM Favorite WHERE article_id = :id")->execute(['id' => $articleId]);
+    $pdo->prepare("DELETE FROM Cart WHERE article_id = :id")->execute(['id' => $articleId]);
+    $pdo->prepare("DELETE FROM Stock WHERE article_id = :id")->execute(['id' => $articleId]);
+
+    $del = $pdo->prepare("DELETE FROM Article WHERE id = :id");
+    $del->execute(['id' => $articleId]);
+
+    header("Location: index.php");
+    exit;
+}
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_favorite'])) {
+    if (!$userId) {
+        header('Location: login.php');
+        exit;
+    }
+    if ($isFavorite) {
+        $pdo->prepare("DELETE FROM Favorite WHERE user_id = :uid AND article_id = :aid")
+            ->execute(['uid' => $userId, 'aid' => $articleId]);
+        $message = "⭐ Article retiré des favoris.";
+        $isFavorite = false;
+    } else {
+        $pdo->prepare("INSERT INTO Favorite (user_id, article_id, created_at) VALUES (:uid, :aid, NOW())")
+            ->execute(['uid' => $userId, 'aid' => $articleId]);
+        $message = "✅ Article ajouté aux favoris.";
+        $isFavorite = true;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isOwner || $isAdmin) && isset($_POST['edit_article'])) {
     $name = trim($_POST['name']);
     $desc = trim($_POST['description']);
     $price = floatval($_POST['price']);
@@ -75,7 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isOwner || $isAdmin)) {
     }
 }
 
-// AJOUT PANIER
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     if (!$userId) {
         header('Location: login.php');
@@ -134,6 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         button {
             padding: 10px 20px;
             margin-top: 10px;
+            cursor: pointer;
         }
 
         .message {
@@ -156,6 +202,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
             max-width: 300px;
             margin: 10px 0;
         }
+
+        /* Styles étoile favoris */
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #f39c12;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+
+        .favorite-btn:hover {
+            color: #d35400;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
 
@@ -171,13 +245,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
             href="profile.php?id=<?= $article['seller_id'] ?>"><?= htmlspecialchars($article['seller_name']) ?></a></p>
 
     <?php if ($message): ?>
-        <div class="message <?= str_starts_with($message, '✅') ? 'success' : 'error' ?>">
+        <div class="message <?= str_starts_with($message, '✅') || str_starts_with($message, '⭐') ? 'success' : 'error' ?>">
             <?= htmlspecialchars($message) ?>
         </div>
     <?php endif; ?>
 
     <?php if ($isOwner || $isAdmin): ?>
         <form method="post">
+            <input type="hidden" name="edit_article" value="1">
             <label>Nom</label>
             <input type="text" name="name" value="<?= htmlspecialchars($article['name']) ?>" required>
 
@@ -198,7 +273,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
 
             <button type="submit">Enregistrer</button>
         </form>
+
+        <form method="post" onsubmit="return confirm('Voulez-vous vraiment supprimer cet article ?');"
+            style="margin-top:10px;">
+            <button type="submit" name="delete_article" class="delete-btn">Supprimer l'article</button>
+        </form>
     <?php else: ?>
+        <?php if ($userId): ?>
+            <form method="post" style="display:inline;">
+                <button class="favorite-btn" type="submit" name="toggle_favorite" aria-label="Toggle favori">
+                    <?= $isFavorite ? '★' : '☆' ?>
+                </button>
+            </form>
+        <?php endif; ?>
+
         <p><?= nl2br(htmlspecialchars($article['description'])) ?></p>
         <p>Prix : <?= number_format($article['price'], 2) ?> €</p>
         <p>Catégorie : <?= htmlspecialchars($article['categorie']) ?></p>

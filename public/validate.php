@@ -1,6 +1,6 @@
 <?php
-include_once '../../includes/header.php';
-include_once '../../includes/db_connect.php';
+include_once '../includes/header.php';
+include_once '../includes/db_connect.php';
 
 echo headerComponent();
 
@@ -151,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
             <button type="submit" name="confirm_order">Valider la commande</button>
         </form>
     <?php else: ?>
-        <p><a href="../index.php">Retour à l'accueil</a></p>
+        <p><a href="index.php">Retour à l'accueil</a></p>
     <?php endif; ?>
 </body>
 
