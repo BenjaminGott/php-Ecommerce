@@ -2,8 +2,6 @@
 include_once '../includes/header.php';
 include_once '../includes/db_connect.php';
 
-session_start();
-
 echo headerComponent();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -147,6 +145,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         $message = "✅ Article ajouté au panier.";
     }
 }
+
+// SOUMISSION D'UN AVIS
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review']) && $hasBought) {
+    $rating = (int) $_POST['rating'];
+    $comment = trim($_POST['comment']);
+
+    if ($rating >= 1 && $rating <= 5 && $comment) {
+        $existingReview = $pdo->prepare("SELECT id FROM Review WHERE user_id = :uid AND article_id = :aid");
+        $existingReview->execute(['uid' => $userId, 'aid' => $articleId]);
+
+        if ($existingReview->fetch()) {
+            // Update existing review
+            $pdo->prepare("UPDATE Review SET rating = :r, comment = :c, created_at = NOW() WHERE user_id = :uid AND article_id = :aid")
+                ->execute(['r' => $rating, 'c' => $comment, 'uid' => $userId, 'aid' => $articleId]);
+        } else {
+            // Insert new review
+            $pdo->prepare("INSERT INTO Review (user_id, article_id, rating, comment, created_at) VALUES (:uid, :aid, :r, :c, NOW())")
+                ->execute(['uid' => $userId, 'aid' => $articleId, 'r' => $rating, 'c' => $comment]);
+        }
+
+        $message = "✅ Merci pour votre avis !";
+        header("Location: detail.php?id=$articleId");
+        exit;
+    } else {
+        $message = "❌ Note ou commentaire invalide.";
+    }
+}
+
+// Calcul de la note moyenne
+$avgRatingStmt = $pdo->prepare("SELECT AVG(rating) as avg_rating, COUNT(*) as count_reviews FROM Review WHERE article_id = :aid");
+$avgRatingStmt->execute(['aid' => $articleId]);
+$ratingData = $avgRatingStmt->fetch(PDO::FETCH_ASSOC);
+$avgRating = $ratingData['avg_rating'] ? number_format($ratingData['avg_rating'], 2) : null;
+$countReviews = $ratingData['count_reviews'];
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -154,83 +187,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
 <head>
     <meta charset="UTF-8">
     <title>Détails de l'article</title>
-    <style>
-        body {
-            max-width: 800px;
-            margin: auto;
-            font-family: sans-serif;
-        }
+    <link rel="stylesheet" href="../styles/detail.css">
 
-        form {
-            margin-top: 20px;
-        }
-
-        input,
-        textarea {
-            width: 100%;
-            margin: 5px 0;
-            padding: 8px;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        button {
-            padding: 10px 20px;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-
-        .message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        img {
-            max-width: 300px;
-            margin: 10px 0;
-        }
-
-        /* Styles étoile favoris */
-        .favorite-btn {
-            background: none;
-            border: none;
-            font-size: 28px;
-            color: #f39c12;
-            padding: 0;
-            margin-bottom: 15px;
-        }
-
-        .favorite-btn:hover {
-            color: #d35400;
-        }
-
-        .delete-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin-top: 20px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .delete-btn:hover {
-            background-color: #c0392b;
-        }
-    </style>
 </head>
 
 <body>
@@ -244,8 +202,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     <p>Vendu par : <a
             href="profile.php?id=<?= $article['seller_id'] ?>"><?= htmlspecialchars($article['seller_name']) ?></a></p>
 
+    <?php if ($avgRating !== null): ?>
+        <p class="avg-rating">Note moyenne : <?= $avgRating ?>/5 (<?= $countReviews ?> avis)</p>
+    <?php else: ?>
+        <p class="avg-rating">Aucun avis pour cet article.</p>
+    <?php endif; ?>
+
     <?php if ($message): ?>
-        <div class="message <?= str_starts_with($message, '✅') || str_starts_with($message, '⭐') ? 'success' : 'error' ?>">
+        <div class="message <?= str_starts_with($message, '✅') ? 'success' : 'error' ?>">
             <?= htmlspecialchars($message) ?>
         </div>
     <?php endif; ?>
@@ -302,6 +266,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         <?php else: ?>
             <p><strong>Article en rupture de stock.</strong></p>
         <?php endif; ?>
+
+        <?php if ($hasBought): ?>
+            <h2>Laisser un avis</h2>
+            <form method="post">
+                <label>Note (1 à 5)</label>
+                <input type="number" name="rating" min="1" max="5" required>
+
+                <label>Commentaire</label>
+                <textarea name="comment" rows="4" required></textarea>
+
+                <button type="submit" name="submit_review">Envoyer l'avis</button>
+            </form>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <h2>Avis des utilisateurs</h2>
+    <?php
+    $reviews = $pdo->prepare("
+        SELECT R.rating, R.comment, R.created_at, U.username 
+        FROM Review R 
+        JOIN User U ON R.user_id = U.id 
+        WHERE R.article_id = :aid 
+        ORDER BY R.created_at DESC
+    ");
+    $reviews->execute(['aid' => $articleId]);
+    $allReviews = $reviews->fetchAll(PDO::FETCH_ASSOC);
+
+    if ($allReviews):
+        foreach ($allReviews as $rev): ?>
+            <div class="review">
+                <strong><?= htmlspecialchars($rev['username']) ?></strong> - Note : <?= $rev['rating'] ?>/5<br>
+                <em><?= nl2br(htmlspecialchars($rev['comment'])) ?></em><br>
+                <small>le <?= $rev['created_at'] ?></small>
+            </div>
+        <?php endforeach;
+    else: ?>
+        <p>Aucun avis pour cet article.</p>
     <?php endif; ?>
 
     <p><a href="index.php">⬅ Retour</a></p>

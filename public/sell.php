@@ -87,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Vendre un article</title>
+    <link rel="stylesheet" href="../styles/sell.css">
 </head>
 
 <body>

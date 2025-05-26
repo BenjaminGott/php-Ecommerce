@@ -114,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
 <head>
     <meta charset="UTF-8">
     <title>Confirmation de commande</title>
+    <link rel="stylesheet" href="../style/validate.css">
 </head>
 
 <body>

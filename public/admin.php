@@ -109,71 +109,7 @@ $articles = $pdo->query("SELECT id, name, price, published_at, author_id FROM Ar
 <head>
     <meta charset="UTF-8">
     <title>Admin - Panneau de gestion</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: auto;
-            padding: 20px;
-        }
-
-        h1 {
-            margin-bottom: 20px;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 40px;
-        }
-
-        th,
-        td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f0f0f0;
-        }
-
-        form {
-            margin: 0;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="number"],
-        input[type="date"],
-        select {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 5px;
-        }
-
-        button {
-            padding: 6px 12px;
-            margin: 2px;
-            cursor: pointer;
-        }
-
-        .message {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-    </style>
+    <link rel="stylesheet" href="../styles/admin.css">
 </head>
 
 <body>

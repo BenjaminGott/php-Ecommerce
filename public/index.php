@@ -87,12 +87,14 @@ function sortLink($field, $currentSort, $currentOrder, $category, $search, $favo
 <head>
     <meta charset="UTF-8">
     <title>Liste des articles</title>
+    <link rel="stylesheet" href="../styles/index.css">
+
 </head>
 
 <body>
     <h1>Articles en vente</h1>
 
-    <form method="get" style="margin-bottom:15px;">
+    <form method="get">
         <label for="search">Rechercher :</label>
         <input type="text" name="search" id="search" value="<?= htmlspecialchars($search) ?>">
 
@@ -107,12 +109,12 @@ function sortLink($field, $currentSort, $currentOrder, $category, $search, $favo
         </select>
 
         <?php if ($userId): ?>
-            <label for="favorites" style="margin-left:15px;">
+            <label for="favorites">
                 <input type="checkbox" name="favorites" id="favorites" <?= $filterFavorites ? 'checked' : '' ?>>
                 Afficher uniquement mes favoris
             </label>
         <?php else: ?>
-            <p style="font-style: italic; color: gray;">Connectez-vous pour filtrer par favoris.</p>
+            <p>Connectez-vous pour filtrer par favoris.</p>
         <?php endif; ?>
 
         <button type="submit">Filtrer</button>
@@ -128,7 +130,7 @@ function sortLink($field, $currentSort, $currentOrder, $category, $search, $favo
         <p>Aucun article trouvé.</p>
     <?php else: ?>
         <?php foreach ($articles as $article): ?>
-            <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+            <div>
                 <h2><?= htmlspecialchars($article['name']) ?></h2>
                 <p><?= nl2br(htmlspecialchars($article['description'])) ?></p>
                 <p>Prix : <?= number_format($article['price'], 2) ?> €</p>
