@@ -87,3 +87,8 @@ ALTER TABLE `Review` ADD FOREIGN KEY (`article_id`) REFERENCES `Article` (`id`);
 ALTER TABLE `History` ADD FOREIGN KEY (`user_id`) REFERENCES `User` (`id`);
 
 ALTER TABLE `History` ADD FOREIGN KEY (`article_id`) REFERENCES `Article` (`id`);
+
+
+INSERT INTO `user` (`id`, `username`, `password`, `email`, `balance`, `profile_picture`, `role`) VALUES
+(4, 'feur', '$2y$10$1AqKi6LAk7iJpzYbzAtTA.FM4s6CRE9FteyVoPOkOhldN4pDzsup2', 'feur@gmail.com', 100, NULL, 'utilisateur'),
+(6, 'admin1', '$2y$10$XzCJaAZn.0ptl04wVpoJKuqWCxumMgg.iQRmlXF9opL18dpcLqoGi', 'admin@admin.com', 9999999999, 'https://img.le-dictionnaire.com/moi.jpg', 'administrateur'),
